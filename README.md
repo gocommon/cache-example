@@ -1,5 +1,7 @@
 # cache-example
 
+example for https://github.com/gocommon/cache
+
 ```
 
 func getTestUserInfoFromCache(id int64) (*TestUser, error) {
