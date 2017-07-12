@@ -86,3 +86,47 @@ GETLOCK:
 
 }
 ```
+
+test console log
+```
+2017/07/12 17:27:51 get lock
+2017/07/12 17:27:51 get from db
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get from done set cache
+2017/07/12 17:27:52 &{1 weisd}
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get data again
+2017/07/12 17:27:52 get from cache
+2017/07/12 17:27:52 &{1 weisd}
+2017/07/12 17:27:52 get from cache
+2017/07/12 17:27:52 &{1 weisd}
+2017/07/12 17:27:52 get from cache
+2017/07/12 17:27:52 &{1 weisd}
+2017/07/12 17:27:52 get from cache
+2017/07/12 17:27:52 &{1 weisd}
+2017/07/12 17:27:52 get from cache
+2017/07/12 17:27:52 &{1 weisd}
+2017/07/12 17:27:52 get from cache
+2017/07/12 17:27:52 &{1 weisd}
+2017/07/12 17:27:52 get from cache
+2017/07/12 17:27:52 &{1 weisd}
+2017/07/12 17:27:52 get from cache
+2017/07/12 17:27:52 get from cache
+2017/07/12 17:27:52 &{1 weisd}
+2017/07/12 17:27:52 &{1 weisd}
+```
