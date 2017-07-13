@@ -64,18 +64,14 @@ func getTestUserInfoFromCache(id int64) (*TestUser, error) {
 
 	info := &TestUser{}
 
-	err = c.Tags(tags).Get(key, info)
-
-	// no err return
-	if err == nil {
-		log.Println("get from cache")
-		return info, nil
+	has, err := c.Tags(tags).Get(key, info)
+	if err != nil {
+		return nil, err
 	}
 
-	// server err
-	if !cache.IsErrNil(err) {
-		log.Println("server err")
-		return nil, err
+	if has {
+		log.Println("get from cache")
+		return info, nil
 	}
 
 	// if not exists go to get data from db
@@ -91,10 +87,13 @@ GETLOCK:
 		time.Sleep(500 * time.Millisecond)
 		// get again
 		log.Println("get data again")
-		err = c.Tags(tags).Get(key, info)
 
-		// no err return
-		if err == nil {
+		has, err := c.Tags(tags).Get(key, info)
+		if err != nil {
+			return nil, err
+		}
+
+		if has {
 			log.Println("get from cache")
 			return info, nil
 		}
