@@ -4,7 +4,7 @@ example for https://github.com/gocommon/cache
 
 ```
 
-func getTestUserInfoFromCache(id int64) (*TestUser, error) {
+func getTestUserInfoFromCache(id int64, idx int) (*TestUser, error) {
 	var err error
 
 	key := getTestUserInfoKey(id)
@@ -14,29 +14,23 @@ func getTestUserInfoFromCache(id int64) (*TestUser, error) {
 		getTestUserInfoTag(id),
 	}
 
-	c := cache.NewCache(cache.UseLocker(true))
-
 	// var info *TestUser
 
-	info := &TestUser{}
+	var info *TestUser
 
-	err = c.Tags(tags).Get(key, info)
-
-	// no err return
-	if err == nil {
-		log.Println("get from cache")
-		return info, nil
+	has, err := c.Tags(tags...).Get(key, &info)
+	if err != nil {
+		return nil, err
 	}
 
-	// server err
-	if !cache.IsErrNil(err) {
-		log.Println("server err")
-		return nil, err
+	if has {
+		log.Println(idx, "get from cache", time.Now())
+		return info, nil
 	}
 
 	// if not exists go to get data from db
 
-	l := c.NewLocker(key)
+	l := c.Locker(key)
 
 	// lock
 GETLOCK:
@@ -44,16 +38,21 @@ GETLOCK:
 
 	if locker.IsErrLockFailed(err) {
 		// wait
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 		// get again
-		log.Println("get data again")
-		err = c.Tags(tags).Get(key, info)
+		log.Println(idx, "get data again", time.Now())
 
-		// no err return
-		if err == nil {
-			log.Println("get from cache")
+		has, err := c.Tags(tags...).Get(key, &info)
+		if err != nil {
+			return nil, err
+		}
+
+		if has {
+			log.Println(idx, "get from cache", time.Now())
 			return info, nil
 		}
+
+		log.Println(idx, "miss goto GETLOCK", time.Now())
 
 		// if empty goto lock
 		goto GETLOCK
@@ -65,20 +64,20 @@ GETLOCK:
 
 	// get lock
 
-	log.Println("get lock")
-	log.Println("get from db")
+	log.Println(idx, "get lock", time.Now())
+	log.Println(idx, "get from db", time.Now())
 
 	info, err = getTestUserInfoFromDB(id)
 	if err != nil {
-		log.Println("getTestUserInfoFromDB err")
+		log.Println(idx, "getTestUserInfoFromDB err", time.Now())
 		return nil, err
 	}
 
-	log.Println("get from done set cache")
+	log.Println(idx, "get from db done set cache", time.Now())
 
-	err = c.Tags(tags).Set(key, info)
+	err = c.Tags(tags...).Set(key, info)
 	if err != nil {
-		log.Println("Set err")
+		log.Println(idx, "Set err", time.Now())
 		return nil, err
 	}
 
