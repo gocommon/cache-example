@@ -25,8 +25,10 @@ func main() {
 
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
+		time.Sleep(5 * time.Millisecond)
 
 		go func(i int) {
+			log.Println(i, "start>>>>>")
 			info, err := getTestUserInfoFromCache(id, i)
 			if err != nil {
 				panic(err)
@@ -106,6 +108,17 @@ GETLOCK:
 	}
 
 	defer l.Unlock()
+
+	// check again
+	has, err = c.Tags(tags...).Get(key, &info)
+	if err != nil {
+		return nil, err
+	}
+
+	if has {
+		log.Println(idx, "get from cache", time.Now())
+		return info, nil
+	}
 
 	// get lock
 
