@@ -8,14 +8,16 @@ import (
 	"sync"
 
 	"github.com/gocommon/cache"
-	"github.com/gocommon/cache/locker"
 )
 
 var c cache.Cacher
 
 func main() {
 
-	c = cache.NewCache(cache.UseLocker(true))
+	c = cache.NewCacheWithConf(cache.Conf{
+	// LockerAdapter: "redis",
+	// LockerAdapterConfig: "[{},]"
+	})
 
 	id := int64(1)
 
@@ -25,7 +27,7 @@ func main() {
 
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
-		time.Sleep(5 * time.Millisecond)
+		// time.Sleep(5 * time.Millisecond)
 
 		go func(i int) {
 			log.Println(i, "start>>>>>")
@@ -80,30 +82,9 @@ func getTestUserInfoFromCache(id int64, idx int) (*TestUser, error) {
 	l := c.Locker(key)
 
 	// lock
-GETLOCK:
 	err = l.Lock()
 
-	if locker.IsErrLockFailed(err) {
-		// wait
-		time.Sleep(50 * time.Millisecond)
-		// get again
-		log.Println(idx, "get data again", time.Now())
-
-		has, err := c.Tags(tags...).Get(key, &info)
-		if err != nil {
-			return nil, err
-		}
-
-		if has {
-			log.Println(idx, "get from cache", time.Now())
-			return info, nil
-		}
-
-		log.Println(idx, "miss goto GETLOCK", time.Now())
-
-		// if empty goto lock
-		goto GETLOCK
-	} else if err != nil {
+	if err != nil {
 		return nil, err
 	}
 
@@ -144,7 +125,7 @@ GETLOCK:
 }
 
 func getTestUserInfoFromDB(id int64) (*TestUser, error) {
-	time.Sleep(60 * time.Millisecond)
+	time.Sleep(2000 * time.Millisecond)
 	return &TestUser{1, "weisd"}, nil
 }
 
