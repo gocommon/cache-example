@@ -32,16 +32,16 @@ func main() {
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 
-		go func() {
-			info, err := getTestUserInfoFromCache(id)
+		go func(i int) {
+			info, err := getTestUserInfoFromCache(id, i)
 			if err != nil {
 				panic(err)
 			}
 
-			log.Println(info)
+			log.Println(i, "<< done", info)
 
 			wg.Done()
-		}()
+		}(i)
 
 	}
 
@@ -56,7 +56,7 @@ func flushcache(id int64) {
 
 }
 
-func getTestUserInfoFromCache(id int64) (*TestUser, error) {
+func getTestUserInfoFromCache(id int64, idx int) (*TestUser, error) {
 	var err error
 
 	key := getTestUserInfoKey(id)
@@ -78,7 +78,7 @@ func getTestUserInfoFromCache(id int64) (*TestUser, error) {
 	}
 
 	if has {
-		log.Println("get from cache")
+		log.Println(idx, "get from cache")
 		return info, nil
 	}
 
@@ -86,7 +86,6 @@ func getTestUserInfoFromCache(id int64) (*TestUser, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	defer sess.Close()
 
 	l := sess.NewLocker(getTestUserInfoTag(id))
@@ -100,26 +99,25 @@ func getTestUserInfoFromCache(id int64) (*TestUser, error) {
 	}
 
 	if has {
-
-		log.Println("get from cache")
+		log.Println(idx, "get from cache")
 		return info, nil
 	}
 
 	// if not exists go to get data from db
 
-	log.Println("get from db")
+	log.Println(idx, "get from db")
 
 	info, err = getTestUserInfoFromDB(id)
 	if err != nil {
-		log.Println("getTestUserInfoFromDB err")
+		log.Println(idx, "getTestUserInfoFromDB err")
 		return nil, err
 	}
 
-	log.Println("get from done set cache")
+	log.Println(idx, "get from done set cache")
 
 	err = c.Tags(tags...).Set(key, info)
 	if err != nil {
-		log.Println("Set err")
+		log.Println(idx, "Set err")
 		return nil, err
 	}
 
