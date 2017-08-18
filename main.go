@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/gocommon/cache"
-	"github.com/gocommon/cache/locker"
+	"github.com/gocommon/etcd3"
 )
 
 func main() {
@@ -16,6 +16,16 @@ func main() {
 	id := int64(1)
 
 	flushcache(id)
+
+	conf := map[string]etcd3.Config{
+		"default": etcd3.Config{
+			Endpoints: []string{"127.0.0.1:2379"},
+		},
+	}
+
+	if err := etcd3.InitEtcdv3(conf); err != nil {
+		panic(err)
+	}
 
 	var wg sync.WaitGroup
 
@@ -40,11 +50,9 @@ func main() {
 }
 
 func flushcache(id int64) {
-	c := cache.NewCache()
-	tags := []string{
-		getTestUserInfoTag(id),
-	}
-	c.Flush(tags)
+	c := cache.New()
+
+	c.Tags(getTestUserInfoTag(id)).Flush()
 
 }
 
@@ -58,13 +66,13 @@ func getTestUserInfoFromCache(id int64) (*TestUser, error) {
 		getTestUserInfoTag(id),
 	}
 
-	c := cache.NewCache(cache.UseLocker(true))
+	c := cache.New()
 
 	// var info *TestUser
 
 	info := &TestUser{}
 
-	has, err := c.Tags(tags).Get(key, info)
+	has, err := c.Tags(tags...).Get(key, info)
 	if err != nil {
 		return nil, err
 	}
@@ -74,41 +82,31 @@ func getTestUserInfoFromCache(id int64) (*TestUser, error) {
 		return info, nil
 	}
 
-	// if not exists go to get data from db
-
-	l := c.NewLocker(key)
-
-	// lock
-GETLOCK:
-	err = l.Lock()
-
-	if locker.IsErrLockFailed(err) {
-		// wait
-		time.Sleep(500 * time.Millisecond)
-		// get again
-		log.Println("get data again")
-
-		has, err := c.Tags(tags).Get(key, info)
-		if err != nil {
-			return nil, err
-		}
-
-		if has {
-			log.Println("get from cache")
-			return info, nil
-		}
-
-		// if empty goto lock
-		goto GETLOCK
-	} else if err != nil {
+	sess, err := etcd3.Session()
+	if err != nil {
 		return nil, err
 	}
 
+	defer sess.Close()
+
+	l := sess.NewLocker(getTestUserInfoTag(id))
+	l.Lock()
 	defer l.Unlock()
 
-	// get lock
+	has, err = c.Tags(tags...).Get(key, info)
+	if err != nil {
 
-	log.Println("get lock")
+		return nil, err
+	}
+
+	if has {
+
+		log.Println("get from cache")
+		return info, nil
+	}
+
+	// if not exists go to get data from db
+
 	log.Println("get from db")
 
 	info, err = getTestUserInfoFromDB(id)
@@ -119,7 +117,7 @@ GETLOCK:
 
 	log.Println("get from done set cache")
 
-	err = c.Tags(tags).Set(key, info)
+	err = c.Tags(tags...).Set(key, info)
 	if err != nil {
 		log.Println("Set err")
 		return nil, err
